@@ -124,12 +124,12 @@ class MultiLayerPerceptron(object):
         dW3 = z2.T @ dh3 + 2 * L2_norm * W3
         dz2 = dh3 @ W3.T
 
-        dh2 = dz2 * np.where(h2 > 0, 1, 0.01)
+        dh2 = dz2 * np.where(h2 > 0, 1, 0.01) 
         db2 = np.sum(dh2, axis=0, keepdims=True)
         dW2 = z1.T @ dh2 + 2 * L2_norm * W2
         dz1 = dh2 @ W2.T
 
-        dh1 = (dz1 + dtanh) * (h1 > 0)
+        dh1 = (dz1 + dtanh) * (h1 > 0) 
         db1 = np.sum(dh1, axis=0, keepdims=True)
         dW1 = X.T @ dh1 + 2 * L2_norm * W1
        
