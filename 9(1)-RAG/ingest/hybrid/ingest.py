@@ -79,26 +79,48 @@ def ingest(progress_callback=None):
         - Call es.indices.refresh() after bulk ingest
     """
     # TODO: Implement ES Hybrid ingestion
-    embeddings = np.load(PROCESSED_DIR / "embeddings.npy")
-    with open(PROCESSED_DIR / "embedding_ids.json", "r", encoding="utf-8") as f:
-        ids = json.load(f)
-
     es = get_es_client()
-    if es.indices.exists(index=INDEX_NAME):
-        es.indices.delete(index=INDEX_NAME)
-    es.indices.create(index=INDEX_NAME, mapping=INDEX_MAPPINGS)
+    
+    embeddings_path = PROCESSED_DIR / "embeddings.npy"
+    ids_path = PROCESSED_DIR / "embedding_ids.json"
     corpus_path = RAW_DIR / "corpus.jsonl"
 
-    count, _ = bulk(
+    if not (embeddings_path.exists() and ids_path.exists() and corpus_path.exists()):
+        print("Error: Required files not found.")
+        return 0
+
+    embeddings = np.load(embeddings_path)
+    with open(ids_path, encoding="utf-8") as f:
+        ids = json.load(f)
+
+    try:
+        if es.indices.exists(index=INDEX_NAME):
+            es.indices.delete(index=INDEX_NAME)
+        es.indices.create(index=INDEX_NAME, mappings=INDEX_MAPPINGS)
+        print(f"Created index: {INDEX_NAME}")
+    except Exception as e:
+        print(f"Error: Failed to connect or create index. Check ELASTIC_ENDPOINT: {e}")
+        return 0
+
+    print(f"Ingesting {len(ids)} documents")
+    upserted_count, errors = bulk(
         es,
         _generate_actions(corpus_path, embeddings, ids),
-        chunk_size=100
+        chunk_size=100,
+        stats_only=True,
+        raise_on_error=False
     )
 
     es.indices.refresh(index=INDEX_NAME)
+
     if progress_callback:
-        progress_callback(count)
-    return count
+        progress_callback(upserted_count)
+
+    print(f"Ingested {upserted_count} documents into {INDEX_NAME}")
+    if errors:
+        print(f"{errors} errors occurred")
+
+    return upserted_count
 
 if __name__ == "__main__":
     ingest()

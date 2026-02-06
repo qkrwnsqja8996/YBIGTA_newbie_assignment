@@ -46,22 +46,37 @@ def search(query: str, top_k: int = 10, candidate_size: int = 50) -> list[dict]:
     # TODO: Implement hybrid RRF search
     q_embedding_vector = embed_query(query)
     es = get_es_client()
-    response=es.search(
+    
+    response = es.search(
         index=INDEX_NAME,
         body={
-            "size": top_k,
             "retriever": {
                 "rrf": {
-                    "rank_constant": 60
-                }, 
-                "retrievers": [ 
-                    { "standard": {"query": { "match": { "text": query } }} },
-                    { "knn": { "field": "embedding",
+                    "rank_constant": 60,
+                    "retrievers": [
+                        {
+                            "standard": {
+                                "query": {
+                                    "match": {
+                                        "text": query
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "knn": {
+                                "field": "embedding",
                                 "query_vector": q_embedding_vector,
-                                "num_candidates": candidate_size * 2} }
-                ] 
-            } 
-        } 
+                                "k": top_k,
+                                "num_candidates": candidate_size * 2
+                            }
+                        }
+                    ]
+                }
+            },
+            "size": top_k,
+            "_source": ["text"]
+        }
     )
     
     results = []
@@ -70,7 +85,7 @@ def search(query: str, top_k: int = 10, candidate_size: int = 50) -> list[dict]:
             "id": hit["_id"],
             "text": hit["_source"]["text"],
             "score": hit["_score"],
-            "method": "Hybrid (RRF)" 
+            "method": "Hybrid (RRF)"
         })
     return results
     

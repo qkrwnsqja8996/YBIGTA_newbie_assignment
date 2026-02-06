@@ -67,10 +67,10 @@ def ingest(progress_callback=None):
     es = get_es_client()
     if es.indices.exists(index=INDEX_NAME):
         es.indices.delete(index=INDEX_NAME)
-    es.indices.create(index=INDEX_NAME, mapping=INDEX_MAPPINGS)
+    es.indices.create(index=INDEX_NAME, mappings=INDEX_MAPPINGS)
     corpus_path = RAW_DIR / "corpus.jsonl"
     
-    count, _ =bulk(
+    upserted_count, _ =bulk(
         es,
         _generate_actions(corpus_path),
         chunk_size=500
@@ -78,8 +78,8 @@ def ingest(progress_callback=None):
     
     es.indices.refresh(index=INDEX_NAME)
     if progress_callback:
-        progress_callback(count)
-    return count
+        progress_callback(upserted_count)
+    return upserted_count
     
 if __name__ == "__main__":
     ingest()

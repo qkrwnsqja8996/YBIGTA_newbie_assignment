@@ -29,7 +29,7 @@ def search(query: str, top_k: int = 10) -> list[dict]:
     """
     # TODO: Implement vector search
     pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
-    index = pc.Index(os.getenv("PINECONE_INDEX_NAME"))
+    index = pc.Index(os.getenv("PINECONE_INDEX"))
     query_result = index.query(
         vector=embed_query(query),
         top_k=top_k,
@@ -41,7 +41,8 @@ def search(query: str, top_k: int = 10) -> list[dict]:
         results.append({
             "id": match["id"],
             "score": match["score"],
-            "text": match["metadata"]["text"] 
+            "text": match["metadata"]["text"] ,
+            "method": "Vector"
     })
         
     return results

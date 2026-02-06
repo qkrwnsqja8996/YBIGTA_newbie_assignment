@@ -41,12 +41,13 @@ def search(query: str, top_k: int = 10) -> list[dict]:
         body={
             "size": top_k,
             "query": {
-                "match" : {
+                "match": {
                     "text": query
                 }
             }
         }
     )
+
     results = []
     for hit in response["hits"]["hits"]:
         result = {
